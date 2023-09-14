@@ -10,13 +10,13 @@ import (
 var DEBUG = "NO"
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-	var RequestHandlingTime int64 = 10 // Unit: ms
+	var requestHandlingTime int64 = 9 // set this 9ms, cause sub-jobs take about 1ms
 	startTime := time.Now().UnixMilli()
 	endTime := time.Now().UnixMilli()
 
 	for {
 		endTime = time.Now().UnixMilli()
-		if (endTime - startTime) > RequestHandlingTime {
+		if (endTime - startTime) > requestHandlingTime {
 			break
 		}
 	}
