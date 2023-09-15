@@ -26,10 +26,15 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func healthChecker(w http.ResponseWriter, r *http.Request) {
+	// do nothing
+}
+
 func main() {
 	if DEBUG == "YES" {
 		fmt.Fprintf(os.Stdout, "Web Server started. Listening on 0.0.0.0:8080\n")
 	}
 	http.HandleFunc("/", requestHandler)
+	http.HandleFunc("/healthz", healthChecker)
 	http.ListenAndServe(":8080", nil)
 }
