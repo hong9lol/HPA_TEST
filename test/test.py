@@ -60,7 +60,7 @@ def main(argv, args):
     options = init(argv, args)        
     yamlfile_path = "../k8s/manifests/simple_app.yaml"
     print(options.target_url)
-    request_rate = 20 # fixed value    
+    request_rate = 20.0 # fixed value
     test_num = 0
     print("# Target URL: " + options.target_url + "\n")
     for tcu in target_cpu_utilizations:               
@@ -82,10 +82,11 @@ def main(argv, args):
                 # os.system("echo $READINESS_INIT_DELAY")
                 # need to remove deployment
                 os.system("kubectl delete deployments.apps simple-app-deployment")
-                time.sleep(60)
+                time.sleep(30)
                 os.system("kubectl apply -f " + yamlfile_path)
                 time.sleep(10)       
-                os.system(" kubectl autoscale deployment simple-app-deployment --cpu-percent=" + str(tcu) + " --min=1 --max=20")       
+                os.system("kubectl delete horizontalpodautoscalers.autoscaling simple-app-deployment")       
+                os.system("kubectl autoscale deployment simple-app-deployment --cpu-percent=" + str(tcu) + " --min=1 --max=20")       
                 Thread(target=data_logger, args=(str(tcu) + "_" + str(start_delay) + "_scenario#" + str(i),)).start()
                 for requests in scenario:                                        
                     users = math.ceil(requests / request_rate)  
@@ -99,5 +100,3 @@ def main(argv, args):
 if __name__ == '__main__' :
     argv = sys.argv        
     main(argv, args)
-    
-    
