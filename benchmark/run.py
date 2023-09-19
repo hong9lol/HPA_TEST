@@ -105,7 +105,7 @@ def main(argv, args):
                 # Thread to write the result of this test
                 Thread(
                     target=_log_benchmark,
-                    args=(str(request_rate) + "_" + str(duration) + str(tcu) + "_" + str(start_delay) +
+                    args=(str(request_rate) + "_" + str(duration) + "_" + str(tcu) + "_" + str(start_delay) +
                           "_scenario#" + str(i),),
                 ).start()
 
@@ -118,7 +118,7 @@ def main(argv, args):
                         users), "-z", str(duration) + "s", "-disable-keepalive", options.target_url]
                     print(command)
                     # run and log the output of the loadgenerator
-                    with open(str(request_rate) + "_" + str(duration) + ".txt", "a") as outfile:
+                    with open(str(request_rate) + "_" + str(duration) + ".log", "a") as outfile:
                         subprocess.run(command, stdout=outfile,)
                 is_one_of_tests_running = False
 
