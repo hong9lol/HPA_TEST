@@ -15,7 +15,7 @@ spec:
         app: simple-app
     spec:
       containers:
-      - image: hong9lol/simple_app
+      - image: hong9lol/simple_app:0.1
         imagePullPolicy: Always
         name: simple-app
         ports:
