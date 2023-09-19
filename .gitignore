@@ -19,3 +19,7 @@
 
 # Go workspace file
 go.work
+
+test/*.txt
+jupyter/*.png
+jupyter/.ipynb_checkpoints
