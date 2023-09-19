@@ -1,173 +1,46 @@
-# todo
-# 1. run test with -c and -z (user, time)
-# 2. get running pod and log with current requests
-
-
-import os, sys, math, time, datetime, subprocess
-import argparse, sys, subprocess
+import os
+import sys
+import math
+import time
+import datetime
+import subprocess
+import argparse
+import sys
+import subprocess
 import yaml
+
+from config import scenarios, target_cpu_utilizations, app_start_up_delays
+from config import request_rate, duration, yamlfile_path
 from threading import Thread
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-u", help=" : Target url")
-parser.add_argument("-rtime", help=" : Duration each test", default="30")
 args = parser.parse_args()
 
-is_thread_run = False
+is_one_of_tests_running = False
 cur_requests = 0
-
-## total test case = 4 * 3 * 5 * 22
-scenarios = [
-    [
-        0,
-        30,
-        60,
-        90,
-        120,
-        150,
-        180,
-        210,
-        240,
-        270,
-        300,
-        330,
-        360,
-        390,
-        420,
-        450,
-        480,
-        510,
-        540,
-        570,
-        600,
-        630,
-    ],  # timeline
-    [
-        10,
-        20,
-        30,
-        40,
-        50,
-        60,
-        70,
-        80,
-        90,
-        100,
-        110,
-        100,
-        90,
-        80,
-        70,
-        60,
-        50,
-        40,
-        30,
-        20,
-        10,
-        10,
-    ],  # increase gradually #1
-    [
-        10,
-        20,
-        20,
-        20,
-        20,
-        20,
-        60,
-        100,
-        140,
-        180,
-        220,
-        180,
-        140,
-        100,
-        60,
-        20,
-        20,
-        20,
-        20,
-        20,
-        10,
-        10,
-    ],  # increase gradually #2
-    [
-        10,
-        10,
-        10,
-        100,
-        100,
-        100,
-        10,
-        10,
-        10,
-        10,
-        10,
-        10,
-        10,
-        200,
-        200,
-        200,
-        10,
-        10,
-        10,
-        10,
-        10,
-        10,
-    ],  # increase abruptly
-    [
-        10,
-        10,
-        100,
-        100,
-        10,
-        10,
-        100,
-        100,
-        10,
-        10,
-        100,
-        100,
-        10,
-        10,
-        100,
-        100,
-        10,
-        10,
-        100,
-        100,
-        10,
-        10,
-    ],  # increase abruptly and repeatedly
-]
-
-# target_cpu_utilizations = [40, 60, 80]
-# app_start_up_delays = [1, 5, 10, 30, 60]
-
-target_cpu_utilizations = [80]
-app_start_up_delays = [1, 30, 60]
 
 
 class Options:
-    def __init__(self, target_url: str, rtime: str) -> None:
+    def __init__(self, target_url: str) -> None:
         self.target_url = target_url
-        self.rtime = rtime
 
 
 def init(argv, args):
     print("\n========== Start Test ==========\n")
     print("[Arguments]")
     print(" - url   : ", args.u)
-    print(" - duration : ", args.rtime)
     print("\n")
 
-    return Options(args.u, args.rtime)
+    return Options(args.u)
 
 
-def data_logger(filename):
-    global is_thread_run, cur_requests
-    is_thread_run = True
+def _log_benchmark(filename):
+    global is_one_of_tests_running, cur_requests
+    is_one_of_tests_running = True
     f = open(filename + ".txt", "w")
-    while is_thread_run:
+    while is_one_of_tests_running:
         running_pods = subprocess.check_output(
             "kubectl get pod | grep -c Running ", shell=True, universal_newlines=True
         )
@@ -183,73 +56,71 @@ def data_logger(filename):
 
 
 def main(argv, args):
-    global is_thread_run, cur_requests
     options = init(argv, args)
-    yamlfile_path = "../k8s/manifests/simple_app.yaml"
-    print(options.target_url)
-    request_rate = 20.0  # fixed value
+    global is_one_of_tests_running, cur_requests
     test_num = 0
-    print("# Target URL: " + options.target_url + "\n")
-    for tcu in target_cpu_utilizations:
-        for start_delay in app_start_up_delays:
-            # update start_delay in yaml
+
+    print("# Target URL: " + options.target_url +
+          "\n# Request Rate(processed in a second):" + str(request_rate) + "\n")
+
+    for tcu in target_cpu_utilizations:  # each target cpu utilization
+        for start_delay in app_start_up_delays:  # each app startup delay
+            # update start_delay in yaml file
             with open(yamlfile_path) as f:
                 doc = yaml.load(f, Loader=yaml.FullLoader)
-
             doc["spec"]["template"]["spec"]["containers"][0]["readinessProbe"][
                 "initialDelaySeconds"
             ] = start_delay
             with open(yamlfile_path, "w") as f:
                 yaml.dump(doc, f)
 
+            # each scenario, start from 1, [0]: timeline
             for i, scenario in enumerate(scenarios[1:], start=1):
                 test_num += 1
+
                 print("[Test #" + str(test_num) + "]")
                 print(f"# Target CPU Utilization: {tcu}")
                 print(f"# Start up delay: {start_delay}")
-                os.environ["READINESS_INIT_DELAY"] = str(start_delay)
-                # os.system("echo $READINESS_INIT_DELAY")
-                # need to remove deployment
+
+                # remove origin deployment and hpa policy and wait 20s to ensure completion
                 os.system(
                     "kubectl delete horizontalpodautoscalers.autoscaling simple-app-deployment"
                 )
-                os.system("kubectl delete deployments.apps simple-app-deployment")
-                time.sleep(30)
+                os.system(
+                    "kubectl delete deployments.apps simple-app-deployment")
+
+                print("Wait for 20s to ensure delete completion")
+                time.sleep(20)
+
+                # deploy deployment and hpa policy and wait 10s to ensure completion
                 os.system("kubectl apply -f " + yamlfile_path)
                 os.system(
                     "kubectl autoscale deployment simple-app-deployment --cpu-percent="
                     + str(tcu)
                     + " --min=1 --max=20"
                 )
+                print("Wait for 20s to ensure deployment completion")
                 time.sleep(20)
+
+                # Thread to write the result of this test
                 Thread(
-                    target=data_logger,
-                    args=(str(tcu) + "_" + str(start_delay) + "_scenario#" + str(i),),
+                    target=_log_benchmark,
+                    args=(str(request_rate) + "_" + str(duration) + str(tcu) + "_" + str(start_delay) +
+                          "_scenario#" + str(i),),
                 ).start()
+
+                # run load generator(hey) to test all requests in each scenario
                 for requests in scenario:
+                    # users for concurrency i.e. 40/20 = 2, 20/10 = 2
                     users = math.ceil(requests / request_rate)
-                    print(
-                        f"../hey_linux_amd64 -q {request_rate} -c {users} -z {options.rtime}s -disable-keepalive "
-                        + options.target_url
-                    )
                     cur_requests = requests
-                    # os.system(f"../hey_linux_amd64 -q {request_rate} -c {users} -z {options.rtime}s -disable-keepalive " + options.target_url + " >> log.txt")
-                    with open("log.txt", "a") as outfile:
-                        subprocess.run(
-                            [
-                                "../hey_linux_amd64",
-                                "-q",
-                                str(request_rate),
-                                "-c",
-                                str(users),
-                                "-z",
-                                str(options.rtime) + "s",
-                                "-disable-keepalive",
-                                options.target_url,
-                            ],
-                            stdout=outfile,
-                        )
-                is_thread_run = False
+                    command = ["./hey_linux_amd64", "-q", str(request_rate), "-c", str(
+                        users), "-z", str(duration) + "s", "-disable-keepalive", options.target_url]
+                    print(command)
+                    # run and log the output of the loadgenerator
+                    with open(str(request_rate) + "_" + str(duration) + ".txt", "a") as outfile:
+                        subprocess.run(command, stdout=outfile,)
+                is_one_of_tests_running = False
 
 
 if __name__ == "__main__":
