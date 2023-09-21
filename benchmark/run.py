@@ -9,7 +9,7 @@ import sys
 import subprocess
 import yaml
 
-from config import scenarios, target_cpu_utilizations, app_start_up_delays
+from config import scenarios, target_cpu_utilizations, app_start_up_delays, app_performance
 from config import request_rate, duration, yamlfile_path
 from threading import Thread
 
@@ -36,13 +36,13 @@ def init(argv, args):
     return Options(args.u)
 
 
-def _log_benchmark(filename):
+def _log_benchmark(dir_name, filename):
     global is_one_of_tests_running, cur_requests
     is_one_of_tests_running = True
-    f = open(filename + ".txt", "w")
+    f = open("./" + dir_name + "/" + filename + ".txt", "w")
     while is_one_of_tests_running:
         running_pods = subprocess.check_output(
-            "kubectl get pod | grep -c Running ", shell=True, universal_newlines=True
+            "kubectl get pod | grep -c Running", shell=True, universal_newlines=True
         )
         f.write(
             str(datetime.datetime.now())
@@ -63,6 +63,9 @@ def main(argv, args):
     print("# Target URL: " + options.target_url +
           "\n# Request Rate(processed in a second):" + str(request_rate) + "\n")
 
+    dir_name = str(int(request_rate)) + "_" + str(duration)
+    os.system("rm -r " + dir_name)
+    os.system("mkdir " + dir_name)
     for tcu in target_cpu_utilizations:  # each target cpu utilization
         for start_delay in app_start_up_delays:  # each app startup delay
             # update start_delay in yaml file
@@ -105,7 +108,7 @@ def main(argv, args):
                 # Thread to write the result of this test
                 Thread(
                     target=_log_benchmark,
-                    args=(str(request_rate) + "_" + str(duration) + "_" + str(tcu) + "_" + str(start_delay) +
+                    args=(dir_name, str(tcu) + "_" + str(start_delay) +
                           "_scenario#" + str(i),),
                 ).start()
 
@@ -114,12 +117,14 @@ def main(argv, args):
                     # users for concurrency i.e. 40/20 = 2, 20/10 = 2
                     users = math.ceil(requests / request_rate)
                     cur_requests = requests
-                    command = ["./hey_linux_amd64", "-q", str(request_rate), "-c", str(
-                        users), "-z", str(duration) + "s", "-disable-keepalive", options.target_url]
+                    command = ["./hey_linux_amd64 -q " + str(request_rate) + " -c " + str(users) + " -z " + str(
+                        duration) + "s " + "-disable-keepalive " + options.target_url + "/" + app_performance]
                     print(command)
+
                     # run and log the output of the loadgenerator
-                    with open(str(request_rate) + "_" + str(duration) + ".log", "a") as outfile:
-                        subprocess.run(command, stdout=outfile,)
+                    with open("./" + dir_name + "/hey.log", "a") as outfile:
+                        # subprocess.run(command, stdout=outfile,)
+                        subprocess.run(command, stdout=outfile, shell=True)
                 is_one_of_tests_running = False
 
 

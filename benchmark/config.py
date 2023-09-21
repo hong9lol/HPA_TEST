@@ -21,6 +21,9 @@ scenarios = [
 target_cpu_utilizations = [60, 80]
 app_start_up_delays = [1, 30, 60]
 
+# "low", "mid", "high"
+app_performance = "mid"
+
 request_rate = 20.0
 duration = 30
 
