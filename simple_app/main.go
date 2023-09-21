@@ -25,9 +25,9 @@ func timer(w http.ResponseWriter, requestHandlingTime int64) {
 		}
 	}
 
-	if DEBUG == "YES" {
+	// if DEBUG == "YES" {
 		fmt.Fprintf(w, "<h1>Handling Time: %d, Start Time: %d End Time: %d Diff: %d</h1>\n", requestHandlingTime, startTime, endTime, endTime-startTime)
-	}
+	// }
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
