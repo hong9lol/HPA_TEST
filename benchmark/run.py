@@ -8,6 +8,7 @@ import argparse
 import sys
 import subprocess
 import yaml
+import datetime
 
 from config import scenarios, target_cpu_utilizations, app_start_up_delays, app_performance
 from config import request_rate, duration, yamlfile_path
@@ -63,7 +64,9 @@ def main(argv, args):
     print("# Target URL: " + options.target_url +
           "\n# Request Rate(processed in a second):" + str(request_rate) + "\n")
 
-    dir_name = str(int(request_rate)) + "_" + str(duration)
+    current_time = datetime.datetime.today().strftime('%Y%m%d%H%M%S')
+    dir_name = current_time + "_" + \
+        str(int(request_rate)) + "_" + str(duration)
     os.system("rm -r " + dir_name)
     os.system("mkdir " + dir_name)
     for tcu in target_cpu_utilizations:  # each target cpu utilization
