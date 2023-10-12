@@ -173,12 +173,15 @@ def reset_test_hpa_environment(test_num, tcu, start_delay):
         #     + str(tcu)
         #     + " --min=1 --max=20"
         # )
-        os.system("kubectl apply -f hpa.yaml")
-        os.system(
-            """kubectl patch horizontalpodautoscalers.autoscaling simple-app-deployment 
-            -p '{"spec":{"metrics":[{"type":"Resource","resource":{"name":"cpu","target":{"averageUtilization":
-            """ + str(tcu) + ""","type":"Utilization"}}}]}}
-            """)
+        if tcu == 60:
+            os.system("kubectl apply -f hpa_60.yaml")
+        else:
+            os.system("kubectl apply -f hpa_80.yaml")
+        # a = """kubectl patch horizontalpodautoscalers.autoscaling simple-app-deployment -p '{"spec":{"metrics":[{"type":"Resource","resource":{"name":"cpu","target":{"averageUtilization": """ + str(
+        #    tcu) + ""","type":"Utilization"}}}]}}"""
+        # print(a)
+        # os.system(
+        #     """kubectl patch horizontalpodautoscalers.autoscaling simple-app-deployment -p '{"spec":{"metrics":[{"type":"Resource","resource":{"name":"cpu","target":{"averageUtilization": """ + str(tcu) + ""","type":"Utilization"}}}]}}""")
     print("Wait for 60s to ensure deployment work finished")
     time.sleep(60)
 
