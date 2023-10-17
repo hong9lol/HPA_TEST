@@ -30,4 +30,4 @@ kubectl rollout restart -n kube-system deployments.apps metrics-server
 kubectl get deployments.apps -n kube-system metrics-server --template='{{range $k := .spec.template.spec.containers}}{{$k.args}}{{"\n"}}{{end}}' | grep -o 'metric-resolution=[^ ]*'
 
 echo ====== Done ======
-python3 benchmark/utils/kubelet_interval_test.py
+#python3 benchmark/utils/kubelet_interval_test.py
