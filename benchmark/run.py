@@ -119,7 +119,7 @@ def _custom_hpa(tcu, pod_name_list, pod_status):
                             """ --patch '{"spec":{"containers":[{"name":"simple-app", "resources":{"requests":{"cpu":"200m"}, "limits":{"cpu":"400m"}}}]}}'""")
 
             else:
-                pod_status[pod_name] = 0
+                pod_status[pod_name] =  0
                 execute_cmd("kubectl patch pod " + pod_name +
                             """ --patch '{"spec":{"containers":[{"name":"simple-app", "resources":{"requests":{"cpu":"10m"}, "limits":{"cpu":"400m"}}}]}}'""")
                 execute_cmd("kubectl patch pod " + pod_name +

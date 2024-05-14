@@ -13,24 +13,25 @@ spec:
     metadata:
       labels:
         app: simple-app
+        status: inactive
     spec:
       containers:
-      - image: hong9lol/simple_app:latest
-        imagePullPolicy: Always
-        name: simple-app
-        ports:
-        - containerPort: 8080
-        readinessProbe:
-          failureThreshold: 10
-          httpGet:
-            path: /healthz
-            port: 8080
-          initialDelaySeconds: 1
-          periodSeconds: 5
-        resources:
-          limits:
-            cpu: 400m
-            memory: 128Mi
-          requests:
-            cpu: 200m
-            memory: 64Mi
+        - image: hong9lol/simple_app:latest
+          imagePullPolicy: Always
+          name: simple-app
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          resources:
+            limits:
+              cpu: 400m
+              memory: 128Mi
+            requests:
+              cpu: 200m
+              memory: 64Mi
